@@ -1,3 +1,84 @@
+# ====================
+# Personal
+
+README
+*~
+#*#
+GO_DEVICE_PLUGIN
+
+# === Build artifacts / binaries ===
+*.bin
+*.o
+*.a
+
+# Go mod cache (rarely needed in repo)
+*.modcache/
+
+# logs
+*.log
+
+# === Go: compiled binaries from cmd/ or */cmd ===
+cmd/*/main
+cmd/*/main.exe
+
+# === Rust (you use Rust often for comparison) ===
+target/
+Cargo.lock   # optional: include only for libraries
+
+# === Python related ===
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# === Bazel ===
+bazel-*
+.cache/
+MODULE.bazel.lock  # lock file changes often & is machine-specific
+
+# === Kubernetes / kind / local cluster artifacts ===
+*.kube/
+kind-config.yaml    # if dynamically generated
+pod-logs/
+*.sock              # device plugin sockets (important!)
+/var/lib/kubelet/device-plugins/*
+
+# === Docker / Colima ===
+colima/
+docker-data/
+.docker/
+
+# === Shell / scripts ===
+*.swp
+*.swo
+
+# === macOS ===
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# === editor/IDE ===
+.vscode/
+.idea/
+*.code-workspace
+
+# === Secrets / credentials ===
+*.pem
+*.key
+*.crt
+secrets.yaml
+secrets/*.json
+*.enc
+*.age
+
+# === Env files ===
+.env.*
+.envrc
+# env file
+.env
+
+# ====================
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
@@ -24,9 +105,7 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
-.env
-
 # Editor/IDE
 # .idea/
 # .vscode/
+# ====================
