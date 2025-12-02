@@ -5,7 +5,7 @@ README
 *~
 #*#
 GO_DEVICE_PLUGIN
-
+device-plugin
 # === Build artifacts / binaries ===
 *.bin
 *.o
