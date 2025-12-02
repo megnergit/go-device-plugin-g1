@@ -1,4 +1,4 @@
-# GO Device Plugin 
+# Go Device Plugin 
 Test device plugin with GoLang.
 
 ## Table of Contents
