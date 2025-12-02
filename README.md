@@ -67,10 +67,21 @@ A device plugin give kubelet access to the hardware
 
 ### Required methods defined in a device plugin
 
+What methods a device plugin should have is clearly defined by 
+the Kubernetes [design](https://github.com/kubernetes/kubelet/blob/master/pkg/apis/deviceplugin/v1beta1/api.proto).
 
 
+| Mandatory           |                                                          | 
+|---------------------|--------------------------------------------------------| 
+| ListAndWatch        | to show kubelet list of device and their health states | 
+| Allocate            | to give kubelet env. variables and device mount infos. |
+| GetDevicePluginOptions | to let kubelet know what the device can do           |    
 
 
+| Optional (but almost mandatory)   |                                           |
+|---------------------|--------------------------------------------------------| 
+| GetPreferredAllocation | answer inquiry from kubelet, which device is optimal | 
+| PreStartContainer      | prepare creating container                           |
 
 
 
