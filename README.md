@@ -142,7 +142,7 @@ docker run --name test-nginx -p 8080:80 -d nginx
 
 Open http://localhost:8080
 
-[nginx-1](./images/nginx-1.png)
+![nginx-1](./images/nginx-1.png)
 
 
 
