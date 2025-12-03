@@ -2,8 +2,6 @@ module example.com/device-plugin
 
 go 1.24.0
 
-toolchain go1.24.10
-
 require (
 	google.golang.org/grpc v1.77.0
 	k8s.io/kubelet v0.34.2

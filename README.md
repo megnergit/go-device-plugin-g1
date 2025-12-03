@@ -10,6 +10,7 @@ Test device plugin with GoLang.
     - [What is a device plugin?](#what-is-a-device-plugin)
     - [How a device plugin communicate with cluster](#how-a-device-plugin-communicate-with-cluster)
     - [Required methods in a device plugin](#required-methods-in-a-device-plugin)
+    - [Goal](#goal)
   - [Techstack of choice](#techstack-of-choice)
     - [Kind](#kind)
     - [Container Runtime](#container-runtime)
@@ -19,31 +20,36 @@ Test device plugin with GoLang.
     - [Kubernets](#kubernets)
   - [Directory Structure](#directory-structure)
   - [GoLang](#golang)
-    - [Which verion?](#which-verion)
-    - [Which packages?](#which-packages)
-    - [Source Code Analysis](#source-code-analysis)
+    - [Which version?](#which-version)
+  - [Source Code Analysis](#source-code-analysis)
   - [Test](#test)
 - [END](#end)
 
 
+---
 ## Motivation
 
-First experiment to understand how a device plugin works with Kubernetes. 
-We will write one in GoLang. 
+This is the first experiment to understand how a device plugin 
+works for Kubernetes. We will write one in GoLang. 
 
 ### What is a device plugin?
 
 A device plugin for kubernetes is often explained that it bridges 
-a hardware of all kinds to Kubernetes. A device plugin makes 
-the hardware visible to a pod. 
+between a hardware of all kinds and a Kubernetes cluster. A device plugin 
+makes the hardware visible to a pod. 
 
-However, 90% of the time, that hardware is a GPU, and the rest is an IoT device or 
-a storage device for which  official plugins are not yet available. 
+In fact 90% of the cases that hardware is a GPU, and the rest is IIoT 
+devices or storage devices for which  official plugins are not yet available. 
 
-A device plugin is like a device driver for a baremetal, but does an extra
-work to connect the hardware that is attached to the baremetal to Kubernetes
-cluster that runs on it. 
-(a device plugin for kubernetes cluster requires a device drive as a requirement)
+A device driver does not drive a hardware by itself. That is what 
+a **device driver** does, which is installed directly on the operation 
+system of the baremetal. A device driver merely makes this hardware
+visible to a pod running on a kubernetes cluster. 
+
+We need to configure a device driver to operate a hardware. For instance 
+in the case of GPU, we would need a device file (like ```/dev/nvidia0```), 
+how many GPUs we will use, how we slice these GPUs, etc. A device plugin helps 
+to configure these parameters from a kubernetes cluster. 
 
 A device plugin runs as a **Daemonset**, which is a pod that runs all the nodes
 that consists of a cluster. 
@@ -63,7 +69,6 @@ The comnunication protocol is **gRPC**, therefore a device driver
 is usually written in **GoLang**. 
 
 ```sh
-
 +-----------------------------+
 |         kubelet             |
 |   /var/lib/kubelet/device-plugins/kubelet.sock
@@ -106,6 +111,14 @@ the Kubernetes [design](https://github.com/kubernetes/kubelet/blob/master/pkg/ap
 | PreStartContainer      | prepare creating container                           |
 
 
+
+### Goal
+
+We will create a minimum device plugin, which 
+
+-  runs on a kubernetes cluster as a **Daemonset**
+-  advertises its presence to **kubelet** via **unix socket**
+-  when called, hands **/dev/null** to a pod
 
 ---
 
@@ -441,7 +454,7 @@ $ tree .
 ---
 ## GoLang
 
-### Which verion?
+### Which version?
 
 The latest version of GoLang at the time of writing is 1.25, 
 which is too new for this project. First we have to uninstall the latest
@@ -461,49 +474,103 @@ The non-latest version of GoLang is installed in ```/usr/local/opt```,
 while the latest version in ```/usr/local/bin```. We have to let shell know that.
 
 Add the following in .zshrc.
-
 ```sh
 export GOPATH=/usr/local/opt/go@1.24/
 export PATH=$PATH:$GOPATH/bin
 # export PATH="/usr/local/opt/go@1.22/bin:$PATH"
 ```
 
-
-### Which packages?
-
-
-At the project root, 
+Then, set up ```go.mod``` at the project root.
+We only need module name and go version in the initial setup.
+The rest will be filled when we execute ```go mod tidy```.
 
 ```sh
-$ go get google.golang.org/grpc@v1.71.3
+module example.com/device-plugin
+go 1.24.0
 ```
 
-Pick one that is comparable with go 1.22
+```module``` entry is the address where one can get that module. 
+
+It **looks like** a **domainname**, but 
+it is a dummy (= placeholder). One can set it up later when you 
+open your project to outside, for instance 
+
+```sh
+module github.com/[YOUR GITHUB NAME]/[YOUR REPO]  
+```
+so that one can retrieve the module by ```go get ```.
+
+```example.com``` can be used by anybody. 
+
+
+```go 1.24``` is the version of GoLang used in this project. 
 
 
 
-### Source Code Analysis
-
-- ./cmd/device-plugin/main.go
-- ./pkg/plugin/plugin.go
+After we executed ```go mod tidy```, go.mod looks like 
 
 
 ```sh
-$ go get k8s.io/kubelet@v0.34.0
-go: downloading k8s.io/kubelet v0.34.0
-go: added k8s.io/kubelet v0.34.0
+module example.com/device-plugin
+
+go 1.24.0
+
+require (
+	google.golang.org/grpc v1.77.0
+	k8s.io/kubelet v0.34.2
+)
+
+require (
+	golang.org/x/net v0.46.1-0.20251013234738-63d1a5100f82 // indirect
+	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
+)
 ```
-https://pkg.go.dev/k8s.io/kubelet 
-(latest version)
 
-https://pkg.go.dev/google.golang.org/grpc
-
-
-brew uninstall go
-brew install go@1.24
+and ```go.sum``` is created to make sure correct dependencies (without scumming) 
+used.  We do not create ```go.sum``` manually ourselves.
 
 
-go mod tidy
+
+The latest versions of ```grpc``` and ```kubelet``` can be seen here.
+
+- https://pkg.go.dev/k8s.io/kubelet 
+- https://pkg.go.dev/google.golang.org/grpc
+
+----
+
+## Source Code Analysis
+
+We would need only two GoLand codes to create this device plugin.
+
+- ```./cmd/device-plugin/main.go```
+- ```./pkg/plugin/plugin.go```
+
+We will look at main.go first.
+
+
+```go main.go
+import (
+	"log"
+	"example.com/device-plugin/pkg/plugin"
+)
+
+func main() {
+	dp := plugin.NewDevicePlugin()
+
+	log.Println("Starting Device Plugin...")
+
+	if err := dp.Start(); err != nil {
+		log.Fatalf("Error starting plugin: %v", err)
+	}
+
+	select {}
+}
+```
+
+
 env GOOS=linux GOARCH=amd64 go build -o device-plugin ./cmd/device-plugin
 
 

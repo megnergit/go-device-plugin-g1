@@ -13,22 +13,34 @@ import (
 	dp "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
+//-----
+
 const (
 	resourceName = "example.com/mydevice"
 	socketName   = "example.sock"
 )
+
+//-----
 
 type DevicePlugin struct {
 	dp.UnimplementedDevicePluginServer
 	server *grpc.Server
 }
 
+//---------------
+// Methods
+//---------------
+
 func NewDevicePlugin() *DevicePlugin {
 	return &DevicePlugin{}
 }
 
+//---------------
+// Start 
+//---------------
 func (p *DevicePlugin) Start() error {
 
+	//---- prepare socket ----
 	socketPath := filepath.Join(dp.DevicePluginPath, socketName)
 
 	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
@@ -41,6 +53,8 @@ func (p *DevicePlugin) Start() error {
 		return fmt.Errorf("failed to listen on socket: %w", err)
 	}
 
+    //---- Start a server ----
+
 	p.server = grpc.NewServer()
 	dp.RegisterDevicePluginServer(p.server, p)
 
@@ -50,6 +64,8 @@ func (p *DevicePlugin) Start() error {
 			log.Fatalf("gRPC server failed: %v", err)
 		}
 	}()
+
+    //---- connect to kubelet ----
 
 	time.Sleep(1 * time.Second)
 
@@ -68,7 +84,9 @@ func (p *DevicePlugin) Start() error {
 
 	defer conn.Close()
 
-	client := dp.NewRegistrationClient(conn)
+//---- register to kubelet ----
+
+    client := dp.NewRegistrationClient(conn)
 
 	req := &dp.RegisterRequest{
 		Version:      dp.Version,
@@ -84,6 +102,12 @@ func (p *DevicePlugin) Start() error {
 	return nil
 }
 
+//---------------
+// ListAndWatch
+//---------------
+
+// let kubelet know what device is available 
+
 func (p *DevicePlugin) ListAndWatch(_ *dp.Empty,
 	stream dp.DevicePlugin_ListAndWatchServer) error {
 	devices := []*dp.Device{
@@ -91,6 +115,14 @@ func (p *DevicePlugin) ListAndWatch(_ *dp.Empty,
 	}
 	return stream.Send(&dp.ListAndWatchResponse{Devices: devices})
 }
+
+//---------------
+// GetPreferredAllocation
+//---------------
+
+// Optional
+// pick up the best device for the pod
+// like in the case of storage
 
 func (p *DevicePlugin) GetPreferredAllocation(
 	ctx context.Context,
@@ -106,6 +138,12 @@ func (p *DevicePlugin) GetPreferredAllocation(
 	}
 	return resp, nil
 }
+
+//---------------
+// Allocate
+//---------------
+
+// actual allocation of the device to a pod
 
 func (p *DevicePlugin) Allocate(
 	ctx context.Context,
@@ -133,10 +171,23 @@ func (p *DevicePlugin) Allocate(
 	return resp, nil
 }
 
+//---------------
+// GetDevicePluginOptions
+//---------------
+
+// show all the options that this device has
+
 func (p *DevicePlugin) GetDevicePluginOptions(context.Context,
 	*dp.Empty) (*dp.DevicePluginOptions, error) {
 	return &dp.DevicePluginOptions{}, nil
 }
+
+//---------------
+// PreStartContainer
+//---------------
+
+// if anything we have to do before starting a container, 
+// this method will do that. 
 
 func (p *DevicePlugin) PreStartContainer(
 
@@ -147,6 +198,7 @@ func (p *DevicePlugin) PreStartContainer(
 	return &dp.PreStartContainerResponse{}, nil
 }
 
-//----
+//------------------
 // END
-//----
+//------------------
+
