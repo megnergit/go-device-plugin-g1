@@ -3,6 +3,28 @@ Test device plugin with GoLang.
 
 ## Table of Contents
 
+-[Motivation](#motivation)
+- [Go Device Plugin](#go-device-plugin)
+  - [Table of Contents](#table-of-contents)
+  - [Motivation](#motivation)
+    - [What is a device plugin?](#what-is-a-device-plugin)
+    - [How a device plugin communicate with cluster](#how-a-device-plugin-communicate-with-cluster)
+    - [Required methods in a device plugin](#required-methods-in-a-device-plugin)
+  - [Techstack of choice](#techstack-of-choice)
+    - [Kind](#kind)
+    - [Container Runtime](#container-runtime)
+    - [VM](#vm)
+    - [Container runtime](#container-runtime-1)
+  - [Build Infrastructure](#build-infrastructure)
+    - [Kubernets](#kubernets)
+  - [Directory Structure](#directory-structure)
+  - [GoLang](#golang)
+    - [Which verion?](#which-verion)
+    - [Which packages?](#which-packages)
+    - [Source Code Analysis](#source-code-analysis)
+  - [Test](#test)
+- [END](#end)
+
 
 ## Motivation
 
@@ -27,7 +49,7 @@ A device plugin runs as a **Daemonset**, which is a pod that runs all the nodes
 that consists of a cluster. 
 
 A device plugin is only required to run on the node where the hardware (most of 
-the time, it is a GPU) is installed.  Therefore we need ```Torelations``` or 
+the time, it is a GPU) is installed.  Therefore we need ```toleration``` or 
 ```nodeSelector``` so that the device plugin runs on the right node. 
 
 
@@ -35,7 +57,7 @@ the time, it is a GPU) is installed.  Therefore we need ```Torelations``` or
 
 A device plugin works side by side with **kubelet**, and 
 communicate only with kubelet. A device plugin does **not**
-discuss with API server, scheduler, contoller manager or a pod.
+discuss with API server, scheduler, controller manager or a pod.
 
 The comnunication protocol is **gRPC**, therefore a device driver 
 is usually written in **GoLang**. 
@@ -65,7 +87,7 @@ A device plugin give kubelet access to the hardware
 6. kubelet uses these infos and create a container. 
 
 
-### Required methods defined in a device plugin
+### Required methods in a device plugin
 
 What methods a device plugin should have is clearly defined by 
 the Kubernetes [design](https://github.com/kubernetes/kubelet/blob/master/pkg/apis/deviceplugin/v1beta1/api.proto).
@@ -86,6 +108,7 @@ the Kubernetes [design](https://github.com/kubernetes/kubelet/blob/master/pkg/ap
 
 
 ---
+
 ## Techstack of choice
 
 ### Kind
@@ -416,14 +439,38 @@ $ tree .
 
 
 ---
-## Source Code 
+## GoLang
 
-Write 
+### Which verion?
 
-- ./cmd/device-plugin/main.go
-- ./pkg/plugin/plugin.go
+The latest version of GoLang at the time of writing is 1.25, 
+which is too new for this project. First we have to uninstall the latest
+version,  
 
-## Go Package
+```sh
+$ brew uninstall go
+```
+
+Then, install GoLang again with the version explicitly specified.  
+
+```sh
+$ brew install go@1.24
+```
+
+The non-latest version of GoLang is installed in ```/usr/local/opt```, 
+while the latest version in ```/usr/local/bin```. We have to let shell know that.
+
+Add the following in .zshrc.
+
+```sh
+export GOPATH=/usr/local/opt/go@1.24/
+export PATH=$PATH:$GOPATH/bin
+# export PATH="/usr/local/opt/go@1.22/bin:$PATH"
+```
+
+
+### Which packages?
+
 
 At the project root, 
 
@@ -433,6 +480,12 @@ $ go get google.golang.org/grpc@v1.71.3
 
 Pick one that is comparable with go 1.22
 
+
+
+### Source Code Analysis
+
+- ./cmd/device-plugin/main.go
+- ./pkg/plugin/plugin.go
 
 
 ```sh
@@ -459,6 +512,10 @@ GOOS=linux GOARCH=amd64 go build -o device-plugin ./cmd/device-plugin
 
 docker cp ./device-plugin dev-control-plane:/device-plugin
 Successfully copied 15.5MB to dev-control-plane:/device-plugin
+
+---
+## Test
+
 
 ----
 # END
