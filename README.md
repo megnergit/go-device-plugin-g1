@@ -22,6 +22,8 @@ Test device plugin with GoLang.
   - [GoLang](#golang)
     - [Which version?](#which-version)
   - [Source Code Analysis](#source-code-analysis)
+    - [```main.go```](#maingo)
+    - [```plugin.go```](#plugingo)
   - [Test](#test)
 - [END](#end)
 
@@ -543,10 +545,13 @@ The latest versions of ```grpc``` and ```kubelet``` can be seen here.
 
 ## Source Code Analysis
 
+
 We would need only two GoLand codes to create this device plugin.
 
 - ```./cmd/device-plugin/main.go```
 - ```./pkg/plugin/plugin.go```
+
+### ```main.go```
 
 We will look at main.go first.
 
@@ -693,6 +698,65 @@ a value.
 
 ---
 
+### ```plugin.go```
+
+```plugin.go``` consists of 
+
+- const
+- type
+- func x 7
+
+
+```func``` defines methods that this device plugin can execute. 
+
+Here we will pick one of them, ```ListAndWait```  and see it 
+closely. 
+
+```go
+func (p *DevicePlugin) ListAndWatch(_ *dp.Empty,
+	stream dp.DevicePlugin_ListAndWatchServer) error {
+	devices := []*dp.Device{
+		{ID: "dev1", Health: dp.Healthy},
+	}
+	return stream.Send(&dp.ListAndWatchResponse{Devices: devices})
+}
+```
+
+GoLang function has the following shape. 
+
+|                   |                            | 
+|-------------------|----------------------------|
+| func              | declare this is a funciton. | 
+| (p *DevicePlugin) | ```p``` is a receiveer | 
+| ListAndWatch      | name of function (here it is a method of DevicePlugin) | 
+| (_ *dp.Empty, stream dp.DevicePlugin_ListAndWatchServer) | arguments | 
+| error             | type of (optional) return value    |   
+| {}　　　　　　　　　 | content of the method          | 　
+
+
+A receiver (```p``` here) is like a ```self``` in 
+python class definition that points to itself (= an instance 
+of DevicePlugin). 
+
+```dp``` is defined here
+```go
+import (
+  ...
+  dp "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+)
+```
+
+and is an API template for kubenetes device plugin. 
+
+
+
+
+
+
+
+---
+## Test
+
 
 
 env GOOS=linux GOARCH=amd64 go build -o device-plugin ./cmd/device-plugin
@@ -703,10 +767,6 @@ GOOS=linux GOARCH=amd64 go build -o device-plugin ./cmd/device-plugin
 
 docker cp ./device-plugin dev-control-plane:/device-plugin
 Successfully copied 15.5MB to dev-control-plane:/device-plugin
-
----
-## Test
-
 
 ----
 # END
