@@ -570,6 +570,130 @@ func main() {
 }
 ```
 
+We specified the location of this device plugin module
+in ```go.mod``` like this
+
+```sh
+module example.com/device-plugin
+```
+
+This points to the project root. We have following directory 
+structure 
+
+```sh
+$ tree .
+.
+├── GO_DEVICE_PLUGIN
+├── LICENSE
+├── README.md
+├── cmd
+│   └── device-plugin
+│       └── main.go
+├── deployments
+│   ├── device-plugin-daemonset.yaml
+│   └── test-pod.yaml
+├── go.mod
+├── go.sum
+├── images
+│   └── nginx-1.png
+└── pkg
+    └── plugin
+        └── plugin.go
+
+```
+
+and ```plugin.go``` (= the main body of the plugin)
+is located at ```pkg/plugin```. Therefore the ```import``` 
+in main.go should be
+
+```sh
+	"example.com/device-plugin/pkg/plugin"
+```
+
+so, **[module name]** + **[folder path]**.
+
+Note, 
+
+```sh
+
+	dp := plugin.NewDevicePlugin()
+
+```
+
+does **not** mean ```plugin``` here is the name of the diretory. 
+We have three 'plugin's in  
+
+
+```sh
+└── pkg
+    └── plugin
+        └── plugin.go
+```
+
+and the first line of plugin.go
+
+```sh
+$ head -n 1 ./pkg/plugin/plugin.go
+package plugin
+```
+
+The 'plugin' in ```dp := plugin.NewDevicePlugin()``` corresponds
+to the third on. If ```plugin.go``` starts with 
+
+```sh
+package plugin3
+```
+
+main.go should call it like 
+
+```sh
+dp := plugin3.NewDevicePlugin()
+```
+
+In the syntax of GoLang, 
+
+```sh
+
+  if [definition of a parameter]; [condition] {
+    [something to be executed]
+  }
+
+```
+
+Therefor the code inside ```{}``` below will be
+executed, only when the return value of dp.Start()
+is not ```nil```.
+
+```sh
+	if err := dp.Start(); err != nil {
+```
+
+```select``` is 
+
+a syntax that 　waits for
+multiple channel operations without consuming CPUs.
+
+```go
+select {
+  case v := <- ch1:   // input via ch1
+    fmt.Println("ch1", v)
+  case ch2 <- 10:    // output via ch2
+    fmt.Println("Sent 10 to ch2")
+}
+```
+
+If there is nothing to execute, 
+```sh
+select {}
+```
+the code waits forever (without consuming CPUs).   
+
+This is to prevent main.go from exiting before dp.Start() returns 
+a value. 
+
+---
+
+
 
 env GOOS=linux GOARCH=amd64 go build -o device-plugin ./cmd/device-plugin
 
